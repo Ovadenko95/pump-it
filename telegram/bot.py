@@ -65,7 +65,11 @@ def handle(msg):
             reply_markup=play_button())
 
     elif text == "/post" and chat["type"] in ("group", "supergroup"):
-        if not is_admin(chat["id"], user.get("id")):
+        # anonymous admins post "as the group" (sender_chat == this chat)
+        anon_admin = msg.get("sender_chat", {}).get("id") == chat["id"]
+        if not anon_admin and not is_admin(chat["id"], user.get("id")):
+            api("sendMessage", chat_id=chat["id"], message_thread_id=msg.get("message_thread_id"),
+                text="Команда /post доступна лише адмінам групи.")
             return
         params = dict(chat_id=chat["id"], parse_mode="HTML", text=PINNED_TEXT,
                       reply_markup=play_button("group_krakenua"))
