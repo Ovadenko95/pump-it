@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pump it — поділитися рекордом</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#07060d;--line:rgba(255,255,255,.09);--text:#f4f2ff;--muted:#8f89b8;--p1:#7b5cff;--bull:#19e3a6}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+  body{background:radial-gradient(120% 60% at 50% 0%,rgba(123,92,255,.25),transparent 60%),var(--bg);display:flex;justify-content:center}
+  .wrap{width:100%;max-width:440px;min-height:100dvh;padding:calc(18px + env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
+  h1{font-family:Unbounded,system-ui,sans-serif;font-weight:900;font-size:22px;letter-spacing:-.01em}
+  h1 span{color:var(--bull)}
+  .sub{color:var(--muted);font-size:14px;line-height:1.45}
+  .card{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+  .card img{max-width:100%;max-height:52dvh;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 0 1px var(--line)}
+  button,a.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:14px;padding:15px;font:700 15px Inter,system-ui,sans-serif;cursor:pointer;text-decoration:none;color:var(--text)}
+  .cta{background:linear-gradient(135deg,#8f6bff,#5631e0);color:#fff;font-family:Unbounded,system-ui,sans-serif;font-size:14px;letter-spacing:.04em;text-transform:uppercase;box-shadow:0 10px 30px rgba(123,92,255,.45)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .ghost{background:rgba(255,255,255,.05);border:1px solid var(--line)}
+  .note{font-size:12.5px;color:var(--muted);line-height:1.45;text-align:center;min-height:18px}
+  .err{color:#ff9db2}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Поділись <span>рекордом</span></h1>
+  <p class="sub">Натисни кнопку нижче й обери Instagram, Threads, TikTok, X чи будь-який інший застосунок: картка піде як зображення.</p>
+  <div class="card"><img id="img" alt="Картка з рекордом"></div>
+  <button class="cta" id="share">Поділитися картинкою</button>
+  <div class="row">
+    <a class="btn ghost" id="save" download="pump-it-ath.jpg">Зберегти</a>
+    <button class="ghost" id="copy">Копіювати текст</button>
+  </div>
+  <div class="row">
+    <a class="btn ghost" id="threads" target="_blank" rel="noopener">Threads</a>
+    <a class="btn ghost" id="x" target="_blank" rel="noopener">X</a>
+  </div>
+  <p class="note" id="note"></p>
+</div>
+<script>
+(() => {
+  // Only cards from our own storage bucket can be shown here
+  const ALLOWED = "https://dlnvgtvpgiquwrjcijzg.supabase.co/storage/v1/object/public/cards/";
+  const q = new URLSearchParams(location.search);
+  const img = q.get("img") || "";
+  const link = /^https:\/\/t\.me\/PumpItGameBot\/play(\?startapp=ref_[A-Za-z0-9_]{1,32})?$/.test(q.get("l") || "") ? q.get("l") : "https://t.me/PumpItGameBot/play";
+  const text = (q.get("t") || "Мій ATH у Pump it 🚀 Переб'єш?").slice(0, 200);
+  const full = `${text} ${link}`;
+  const $ = (id) => document.getElementById(id);
+  const note = (t, bad) => { $("note").textContent = t; $("note").className = "note" + (bad ? " err" : ""); };
+
+  if (!img.startsWith(ALLOWED) || !/\.jpg$/.test(img)) { note("Картку не знайдено. Повернись у гру й спробуй ще раз.", true); $("share").disabled = true; return; }
+  $("img").src = img;
+  $("save").href = img;
+  $("threads").href = "https://www.threads.net/intent/post?text=" + encodeURIComponent(full);
+  $("x").href = "https://x.com/intent/post?text=" + encodeURIComponent(full);
+
+  let file = null;
+  fetch(img).then(r => r.blob()).then(b => { file = new File([b], "pump-it-ath.jpg", { type: "image/jpeg" }); }).catch(() => {});
+
+  $("share").onclick = async () => {
+    try {
+      if (!file) { const b = await (await fetch(img)).blob(); file = new File([b], "pump-it-ath.jpg", { type: "image/jpeg" }); }
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], text: full });
+        note("Готово 🚀");
+        return;
+      }
+      if (navigator.share) { await navigator.share({ text: full, url: link }); note("Цей браузер ділиться лише текстом. Збережи картку й додай її вручну."); return; }
+      note("Цей браузер не вміє ділитися. Збережи картку й додай її в пост чи сторіс.", true);
+    } catch (e) { if (!e || e.name !== "AbortError") note("Не вдалося поділитися. Збережи картку й додай її вручну.", true); }
+  };
+  $("copy").onclick = async () => {
+    try { await navigator.clipboard.writeText(full); note("Текст скопійовано"); } catch (e) { note("Не вдалося скопіювати", true); }
+  };
+})();
+</script>
+</body>
+</html>
