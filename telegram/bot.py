@@ -19,7 +19,7 @@ import time
 import requests
 
 TOKEN = os.environ["BOT_TOKEN"]
-BOT_USERNAME = os.environ.get("BOT_USERNAME", "PumpItKrakenBot")
+BOT_USERNAME = os.environ.get("BOT_USERNAME", "PumpItGameBot")
 APP_NAME = os.environ.get("APP_NAME", "play")
 API = f"https://api.telegram.org/bot{TOKEN}"
 

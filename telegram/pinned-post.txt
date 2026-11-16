@@ -7,6 +7,6 @@
 
 Немає мікрофона під рукою? Можна грати утриманням пальця.
 
-👉 Грати: https://t.me/PumpItKrakenBot/play?startapp=group_krakenua
+👉 Грати: https://t.me/PumpItGameBot/play?startapp=group_krakenua
 
 Поділись своєю карткою з рекордом тут, у гілці 👇
